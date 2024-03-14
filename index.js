@@ -38,7 +38,9 @@ app.use(async (req, res, next) => {
         req.user = user;
         next()
     } catch (e) {
-        return res.json({ msg: "TOKEN NOT FOUND / INVALID" })
+        req.user = null
+        next()
+        // return res.json({ msg: "TOKEN NOT FOUND / INVALID" })
     }
 })
 

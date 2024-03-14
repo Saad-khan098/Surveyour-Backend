@@ -8,17 +8,16 @@ var router = express.Router();
 
 
 router.get('/:id', async (req,res)=>{
+    console.log(req.user);
     const {id} = req.params;
     try{
         const form = await Form.findOne({_id: id});
-        
-        // const elements = await Element.find({formId: form._id});
-        // form.elements = elements;
-        
+        const elements = await Element.find({formId: form._id});
+        form.elements = elements;
         res.json(form).end();
     }
     catch(e){
-        console.log(e);
+        console.log('some error');
         res.json({msg: 'some error occured'})
     }
 
@@ -27,7 +26,9 @@ router.get('/:id', async (req,res)=>{
 
 
 router.put('/:id', async (req,res)=>{
-    // name check
+
+    console.log(req.user)
+
     const {name} = req.body;
     if(!name || name.length ==0){
         res.status(404).json({msg: "enter valid form name"});
@@ -44,19 +45,18 @@ router.put('/:id', async (req,res)=>{
         res.json({msg: 'form updated sucessfullly'})
     }
     catch(e){
-        console.log(e);
+        console.log('some error');
         res.json({msg: 'some error occured'})
     }
 })
 
 router.post('/create', async (req,res)=>{
 
-    // create form endpoint
-    // user inputs: name, token(for user_id)
-
+    if(!req.user)res.status(401).json({msg: 'login required'});
     const {name} = req.body;
 
-    if(!name || name.length ==0){
+
+    if(!name || name.length == 0){
         res.status(404).json({msg: "enter valid form name"});
     }
 
@@ -65,15 +65,15 @@ router.post('/create', async (req,res)=>{
         
         const form = new Form({
             name: name,
-            user: req.user.id
+            user: req.user? req.user.id: null
         })
         console.log(form);
-        console.log(req.user)
         await form.save();
         res.json({msg: 'form created successfully'});
     }
     catch(e){
-
+        console.log(e);
+        res.json({msg: 'some error occured'});
     }
 })
 
