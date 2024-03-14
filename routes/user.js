@@ -18,14 +18,13 @@ router.delete('/:email', checkAdmin, async (req,res)=>{
     try{
 
         await User.deleteOne({email: req.params.email});
-        res.json({msg: 'user deleted successfully'});
+        res.status(204).json({msg: 'user deleted successfully'});
     }
     catch(e){
         console.log(e);
-        res.json({msg: 'Some error occured'})
+        res.status(500).json({msg: 'Some error occured'})
     }
 
 })
 
-router.get('')
 export default router

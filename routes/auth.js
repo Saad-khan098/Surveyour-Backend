@@ -3,6 +3,7 @@ import User from "../Models/User.js";
 import express from 'express';
 import jwt from 'jsonwebtoken';
 
+const SecretKey = 'My_Secret_Key';
 
 var router = express.Router();
 
@@ -62,7 +63,7 @@ router.post("/login", async (req, res) => {
             email,
             createdAt: new Date(),
             roles: user.roles
-        }, "MY_SECRET", { expiresIn: "1d" });
+        }, SecretKey, { expiresIn: "1d" });
 
         res.json({
             msg: "LOGGED IN", token
