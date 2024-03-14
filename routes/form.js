@@ -8,72 +8,62 @@ var router = express.Router();
 
 
 router.get('/:id', async (req,res)=>{
-    const {id} = req.params;
     try{
+        const {id} = req.params;
         const form = await Form.findOne({_id: id});
-        
-        // const elements = await Element.find({formId: form._id});
-        // form.elements = elements;
-        
-        res.json(form).end();
+        if (!form) return res.json({msg:"FORM NOT FOUND"});
+        res.json({msg: "FORM FOUND", form}).end();
     }
     catch(e){
         console.log(e);
-        res.json({msg: 'some error occured'})
-    }
-
-    
+        res.json({msg: 'some error occured'}).end();
+    }  
 })
 
 
 router.put('/:id', async (req,res)=>{
     // name check
     const {name} = req.body;
-    if(!name || name.length ==0){
-        res.status(404).json({msg: "enter valid form name"});
-    }
-
-    // check user matches with form -> user_id
-
     const {id} = req.params;
+    if(!name || name.length ==0){
+        res.status(400).json({msg: "enter valid form name"});
+    }
     try{
-        await Form.updateOne(
-            {_id: id},
-            {$set: {name: name}}
-        )
-        res.json({msg: 'form updated sucessfullly'})
+        const form = await Form.findById(id);
+        if (!form) {
+            return res.status(404).json({ msg: "Form not found" });
+        }
+
+        if (String(form.user) !== String(req.user._id)) {
+            return res.status(401).json({ msg: "Unauthorized" });
+        }
+        await Form.findByIdAndUpdate(id, { name: name });
+        res.status(204).json({msg: 'form updated sucessfullly'})
     }
     catch(e){
         console.log(e);
-        res.json({msg: 'some error occured'})
+        res.status(500).json({msg: 'some error occured'});
     }
 })
 
 router.post('/create', async (req,res)=>{
-
-    // create form endpoint
-    // user inputs: name, token(for user_id)
-
     const {name} = req.body;
-
     if(!name || name.length ==0){
-        res.status(404).json({msg: "enter valid form name"});
+        res.status(400).json({msg: "enter valid form name"});
     }
-
     try{
-        console.log(req.body);
+        const user = await User.findOne({email : req.user.email})
+        if (!user) return res.status(401).json({msg:"USER NOT FOUND"});
         
-        const form = new Form({
+        await Form.create({
             name: name,
             user: req.user.id
         })
-        console.log(form);
-        console.log(req.user)
-        await form.save();
-        res.json({msg: 'form created successfully'});
+        res.status(201).json({msg: 'form created successfully'});
     }
     catch(e){
-
+        console.log(e);
+        res.status(500).json({msg: 'some error occured'});
     }
 })
 
