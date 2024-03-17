@@ -7,6 +7,8 @@ import formRouter from './routes/form.js'
 import elementRouter from './routes/element.js'
 import jwt from 'jsonwebtoken'
 
+const SecretKey = 'My_Secret_Key';
+
 const app = express();
 
 const main = async () => {
@@ -34,7 +36,7 @@ app.use('/auth', authRouter)
 app.use(async (req, res, next) => {
     try {
         const token = req.headers.authorization;
-        const user = jwt.verify(token.split(" ")[1], "MY_SECRET")
+        const user = jwt.verify(token.split(" ")[1], SecretKey)
         req.user = user;
         next()
     } catch (e) {
@@ -46,7 +48,7 @@ app.use(async (req, res, next) => {
 
 app.use('/user', userRouter)
 app.use('/form', formRouter)
-app.use('/element', formRouter)
+app.use('/element', elementRouter)
 
 app.use((req, res, next) => {
     res.status(404).json({ error: 'URL Not Found' });
