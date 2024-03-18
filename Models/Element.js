@@ -1,4 +1,4 @@
-import mongoose from 'mongoose';
+import mongoose, { trusted } from 'mongoose';
 
 const elementTypes = [
     text, //options __ blank
@@ -12,6 +12,7 @@ const elementTypes = [
 const ElementSchema = new mongoose.Schema({
     formId: {type: mongoose.Schema.Types.ObjectId, ref:'Form', required: true},
     order: {type: Number, required: true},
+    required: {type: Boolean, default: true},
     elementType: {type: Number, required: true},
     question: {type: String, required: true},
     option: [String],

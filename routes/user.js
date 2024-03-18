@@ -24,7 +24,6 @@ router.delete('/:email', checkAdmin, async (req,res)=>{
         console.log(e);
         res.status(500).json({msg: 'Some error occured'})
     }
-
 })
 
 export default router

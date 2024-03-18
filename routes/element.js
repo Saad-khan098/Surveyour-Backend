@@ -11,13 +11,15 @@ var router = express.Router();
 router.post('/create', async(req,res)=>{
     try{
         const {formId, order, elementType, question, option} = req.body;
-        const user = await User.findOne({email: req.user.email})
-        if (!user) return res.status(404).json({msg:'USER NOT FOUND'})
+        // 
+
+        // const user = await User.findOne({email: req.user.email})
+        // if (!user) return res.status(404).json({msg:'USER NOT FOUND'})
 
         const form = await Form.findById(formId);
         if (!form) return res.status(404).json({ msg: "Form not found" });
 
-        await Element.create({...req.body, user:user._id})
+        await Element.create({...req.body, user:req.user.id})
         res.status(200).json({ msg: "ELEMENT CREATED" })
 
     }catch(error){
@@ -45,7 +47,7 @@ router.delete('/delete/:id', async(req,res)=>{
 
 
 router.post('/changeOrder', async (req,res)=>{
-    const {orderNumbers} = req.body;
+    const {orderNumbers, formId} = req.body;
 
     // [
     //     {element_id, newOrder},
@@ -55,7 +57,7 @@ router.post('/changeOrder', async (req,res)=>{
     // ]
 
     orderNumbers.forEach(async elem=>{
-        await Elem.updateOne({_id: elem.element_id}, {$set: {order: elem.newOrder}});
+        await Elem.updateOne({_id: elem.element_id, formId: formId}, {$set: {order: elem.newOrder}});
     })
 })
 

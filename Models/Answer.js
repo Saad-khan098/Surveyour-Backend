@@ -8,7 +8,10 @@ const AnswerSchema = new mongoose.Schema({
     elementType: {type: Number, required: true},
     option: [String],
     answer: String,
-    createdAt: {type: Date, default: new Date()}
+    createdAt: {type: Date, default: new Date()},
+    response_id: {type: mongoose.Schema.Types.ObjectId, ref:'User', required: true}
 })
 
 export default mongoose.models.Answer || mongoose.model('Answer', AnswerSchema)
+
+
