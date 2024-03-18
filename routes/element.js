@@ -8,7 +8,7 @@ import Element from '../Models/Element.js'
 var router = express.Router();
 
 
-router.post('/create', async(req,res)=>{
+router.post('/createE', async(req,res)=>{
     try{
         const {formId, order, elementType, question, option} = req.body;
         // 
@@ -30,11 +30,11 @@ router.post('/create', async(req,res)=>{
 
 router.delete('/delete/:id', async(req,res)=>{
     try{
-        const element = await Element.findOne({id: req.params.id})
+        const element = await Element.findOne({_id: req.params.id})
         if (!element) return res.status(404).json({msg:"ELEMENT NOT FOUND"})
         
         await Element.deleteOne({_id: req.params.id})
-        res.status(204).json({msg:"ELEMENT DELETED"})
+        res.status(200).json({msg:"ELEMENT DELETED"})
 
     }catch(error){ 
     console.error(error);
@@ -42,23 +42,40 @@ router.delete('/delete/:id', async(req,res)=>{
     }
 })
 
-// const elements = await Element.find({formId: form._id});
-// form.elements = elements;
 
+router.post('/changeOrder', async (req, res) => {
+    try {
+        const { orderNumbers } = req.body;
+        for (const element of orderNumbers) {
+            await Element.updateOne(
+                { _id: element.element_id },
+                { $set: { order: element.newOrder } }
+            );
+        }
+        res.status(200).json({ msg: 'Order updated successfully' });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ msg: 'Some error occurred' });
+    }
+});
 
-router.post('/changeOrder', async (req,res)=>{
-    const {orderNumbers, formId} = req.body;
+// router.post('/changeOrder', async (req,res)=>{
+//     try{ 
+//         const {orderNumbers} = req.body;
+//         orderNumbers.forEach(async element => {
+//         await Element.updateOne({_id: element.element_id}, {$set: {order: element.newOrder}});
+//         })
+//     }catch(error){
+//     console.error(error);
+//     res.status(500).json({msg: 'some error occured'});
+//     }
+// })
 
-    // [
+export default router
+
+// [
     //     {element_id, newOrder},
     //     {element_id, newOrder},
     //     {element_id, newOrder},
     //     {element_id, newOrder},
     // ]
-
-    orderNumbers.forEach(async elem=>{
-        await Elem.updateOne({_id: elem.element_id, formId: formId}, {$set: {order: elem.newOrder}});
-    })
-})
-
-export default router
