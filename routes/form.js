@@ -4,31 +4,39 @@ import express from 'express';
 import jwt from 'jsonwebtoken';
 import Form from '../Models/Form.js'
 import Element from '../Models/Element.js'
+import mongoose from 'mongoose';
 
 var router = express.Router();
+
+router.get('/all', async (req,res)=>{
+    if(!req.user)return res.status(401).json({msg: 'not auth'});
+
+    const forms = await Form.find({user: req.user.id}).exec();
+    console.log(forms);
+    res.json(forms).end()
+})
 
 router.get('/:id', async (req, res) => {
     try {
         const { id } = req.params;
+        console.log(id);
 
-        // Use aggregation to fetch form and elements with the same formId
         const formWithElements = await Form.aggregate([
-            { $match: { _id: mongoose.Types.ObjectId(id) } }, // Match the specified formId
+            { $match: { _id: new mongoose.Types.ObjectId(id)} }, 
             {
                 $lookup: {
-                    from: 'elements', // Collection name for elements
+                    from: 'elements', 
                     localField: '_id',
                     foreignField: 'formId',
-                    as: 'elements' // Store elements in the form document
+                    as: 'elements'
                 }
             }
         ]);
-
         if (!formWithElements || formWithElements.length === 0) {
             return res.json({ msg: 'FORM NOT FOUND' });
         }
 
-        res.json(formWithElements[0]).end(); // Return the first (and only) matched form document
+        res.json(formWithElements[0]).end(); 
     } catch (e) {
         console.log(e);
         res.json({ msg: 'Some error occurred' }).end();
@@ -56,10 +64,14 @@ router.get('/:id', async (req, res) => {
 
 router.put('/:id', async (req,res)=>{
 
-    console.log(req.user)
 
     const {name} = req.body;
     const {id} = req.params;
+
+    if(!req.user){
+        return res.status(401).json({msg: 'not authorized'});
+    }
+
     if(!name || name.length ==0){
         res.status(400).json({msg: "enter valid form name"});
     }
@@ -84,6 +96,10 @@ router.put('/:id', async (req,res)=>{
 router.post('/create', async (req, res) => {
     const { name } = req.body;
 
+    if(!req.user){
+        return res.status(401).json({msg: 'not auth'});
+    }
+
     try {
         if (!name || name.trim().length === 0) {
             return res.status(400).json({ msg: "Please enter a valid form name" });
@@ -91,13 +107,12 @@ router.post('/create', async (req, res) => {
         if (!req.user || !req.user.id) {
             return res.status(401).json({ msg: "Unauthorized, please login" });
         }
-        const user = await User.findOne({ _id: req.user.id });
-        if (!user) {
-            return res.status(404).json({ msg: "User not found" });
-        }
+        const form = await Form.findOne({name: name}).exec();
+        if(form)res.status(409).send({msg: 'a form by this name already exists'})
+
         await Form.create({
             name: name,
-            user: user._id
+            user: req.user.id
         });
         return res.status(201).json({ msg: 'Form created successfully' });
     } catch (e) {
@@ -105,5 +120,22 @@ router.post('/create', async (req, res) => {
         return res.status(500).json({ msg: 'Some error has occurred' });
     }
 });
+router.delete('/:id', async (req,res) =>{
+
+    if(!req.user)return res.status(401).send({msg: 'not auth'});
+
+    const {id} = req.params;
+    const form = await Form.findOne({_id: id}).exec();
+
+    if(!form){
+        return res.status(404).send({msg: 'form not found'});
+    }
+    if(form.user != req.user.id) return res.status(401).send({msg: 'not auth'});
+
+    await Form.deleteOne({_id: form._id}).exec();
+    await Element.deleteMany({formId: form.id}).exec();
+
+    res.json({msg: `form ${form._id} and all of its elements deleted successfully`})
+})
 
 export default router

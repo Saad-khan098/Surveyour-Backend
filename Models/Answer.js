@@ -3,13 +3,10 @@ import mongoose from 'mongoose';
 
 
 const AnswerSchema = new mongoose.Schema({
-    form_id: {type: mongoose.Schema.Types.ObjectId, ref:'User', required: true},
-    element_id: {type: mongoose.Schema.Types.ObjectId, red: "Element", required: true},
-    elementType: {type: Number, required: true},
-    option: [String],
+    element: {type: mongoose.Schema.Types.ObjectId, ref: "Element", required: true},
     answer: String,
     createdAt: {type: Date, default: new Date()},
-    response_id: {type: mongoose.Schema.Types.ObjectId, ref:'User', required: true}
+    response: {type: mongoose.Schema.Types.ObjectId, ref:'Response', required: true}
 })
 
 export default mongoose.models.Answer || mongoose.model('Answer', AnswerSchema)

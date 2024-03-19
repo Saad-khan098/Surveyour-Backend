@@ -3,10 +3,10 @@ import mongoose, { trusted } from 'mongoose';
 const elementTypes = [
     'text', //options __ blank
     'numerical', // options __ blank
+    'date',   //options __ blank
     'radio', // options __ array of strings
     'checkbox', // optins __ array of strings
     'dropdown', // optins __ array of strings
-    'date',   //options __ blank
 ]
 
 const ElementSchema = new mongoose.Schema({

@@ -8,16 +8,18 @@ import Element from '../Models/Element.js'
 var router = express.Router();
 
 
-router.post('/createE', async(req,res)=>{
+router.post('/create', async(req,res)=>{
+    if(!req.user){
+        return res.status(401).json({msg: 'not authorized'});
+    }
     try{
         const {formId, order, elementType, question, option} = req.body;
-        // 
-
-        // const user = await User.findOne({email: req.user.email})
-        // if (!user) return res.status(404).json({msg:'USER NOT FOUND'})
+        console.log(req.body)
+       
 
         const form = await Form.findById(formId);
         if (!form) return res.status(404).json({ msg: "Form not found" });
+        if(form.user != req.user.id)return res.status(401).json({msg: 'not authorized'});
 
         await Element.create({...req.body, user:req.user.id})
         res.status(200).json({ msg: "ELEMENT CREATED" })
@@ -28,12 +30,21 @@ router.post('/createE', async(req,res)=>{
     }
 })
 
-router.delete('/delete/:id', async(req,res)=>{
+router.delete('/:id', async(req,res)=>{
+    const {id} = req.params;
+
+    if(!req.user)return res.status(401).json({msg: 'not auth'});
+    
     try{
-        const element = await Element.findOne({_id: req.params.id})
+        const element = await Element.findOne({_id: id}, {formId: 1}).populate('formId').exec()
+        console.log(element);
+
         if (!element) return res.status(404).json({msg:"ELEMENT NOT FOUND"})
+
+        if(element.formId.user != req.user.id)return res.status(409).json({msg: 'not aut'});
+
         
-        await Element.deleteOne({_id: req.params.id})
+        await Element.deleteOne({_id: id})
         res.status(200).json({msg:"ELEMENT DELETED"})
 
     }catch(error){ 
@@ -44,6 +55,9 @@ router.delete('/delete/:id', async(req,res)=>{
 
 
 router.post('/changeOrder', async (req, res) => {
+
+    if(!req.user)return res.status(401).json({msg: 'not auth'});
+
     try {
         const { orderNumbers } = req.body;
         for (const element of orderNumbers) {
@@ -58,6 +72,72 @@ router.post('/changeOrder', async (req, res) => {
         res.status(500).json({ msg: 'Some error occurred' });
     }
 });
+router.post('/changeQuestion/:elementId', async (req,res)=>{
+    if(!req.user)return res.status(401).json({msg: 'not auth'});
+
+    const {elementId} = req.params;
+    const {question} = req.body;    
+
+    if(!question || question.length < 2) return res.status(400).json({msg: 'incoorect question'})
+
+    try{
+        const element = await Element.findOne({_id: elementId}, {formId: 1}).populate('formId').exec()
+        if(!element)return res.status(404).json({msg: 'element not found'});
+        if(element.formId.user != req.user.id)return res.status(401).json({msg: 'not auth'});
+        
+        await Element.updateOne({_id: elementId}, {$set: {question: question}}).exec()
+        res.json({msg: `element question ${elementId} successfully updated `});
+    }
+    catch(e){
+        console.log(e);
+        res.status(500).json({ msg: 'Some error occurred' });
+    }
+    
+})
+router.post('/addOption/:elementId', async (req,res)=>{
+    if(!req.user)return res.status(401).json({msg: 'not auth'});
+
+    const {elementId} = req.params;
+    const {option} = req.body;   
+    if(!option || option.length <= 0) return res.status(400).json({msg: 'incoorect option'})
+
+
+    try{
+        const element = await Element.findOne({_id: elementId}, {formId: 1}).populate('formId').exec()
+        if(!element)return res.status(404).json({msg: 'element not found'});
+        if(element.formId.user != req.user.id)return res.status(401).json({msg: 'not auth'});
+        
+        await Element.updateOne({_id: elementId}, {$push: {option: option}}).exec();
+        return res.json({msg: 'option added'}).end();
+    }
+    catch(e){
+        console.log(e);
+        res.status(500).json({ msg: 'Some error occurred' });
+    }
+ 
+})
+
+router.post('/removeOption/:elementId', async (req,res)=>{
+    if(!req.user)return res.status(401).json({msg: 'not auth'});
+
+    const {elementId} = req.params;
+    const {option} = req.body;   
+    if(!option || option.length <= 0) return res.status(400).json({msg: 'incoorect option'})
+
+    try{
+        const element = await Element.findOne({_id: elementId}, {formId: 1}).populate('formId').exec()
+        if(!element)return res.status(404).json({msg: 'element not found'});
+        if(element.formId.user != req.user.id)return res.status(401).json({msg: 'not auth'});
+        
+        await Element.updateOne({_id: elementId}, {$pull: {option: option}}).exec();
+        return res.json({msg: 'option removed'}).end();
+    }
+    catch(e){
+        console.log(e);
+        res.status(500).json({ msg: 'Some error occurred' });
+    }
+ 
+})
 
 // router.post('/changeOrder', async (req,res)=>{
 //     try{ 
@@ -72,10 +152,3 @@ router.post('/changeOrder', async (req, res) => {
 // })
 
 export default router
-
-// [
-    //     {element_id, newOrder},
-    //     {element_id, newOrder},
-    //     {element_id, newOrder},
-    //     {element_id, newOrder},
-    // ]
