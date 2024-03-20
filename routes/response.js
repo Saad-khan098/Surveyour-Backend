@@ -3,7 +3,7 @@ import Form from "../Models/Form.js";
 import Answer from "../Models/Answer.js";
 import Element from "../Models/Element.js";
 import express from 'express';
-
+import mongoose from "mongoose";
 
 var router = express.Router();
 
@@ -52,15 +52,50 @@ router.post('/create/:formId', async (req, res) => {
 router.get('/all/:formId', async (req, res) => {
     if (!req.user) return res.status(401).send({ msg: 'not auth' });
     const { formId } = req.params;
-    console.log('getting all responses of', formId)
+
+    
 
     try {
         const form = await Form.findOne({ _id: formId }).exec();
         if (!form) return res.status(404).send({ msg: 'form not found' });
         if (form.user != req.user.id) return res.status(401).send({ msg: 'not auth' });
 
-        const responses = await Response.find({ form: formId }).exec();
-        res.json(responses);
+        const perPage = Math.min(req.query.perPage || 3, 3);
+        console.log(perPage);
+        console.log()
+        const page = req.query.page || 1;
+        const offset = (page - 1) * perPage;
+
+        const data = await Response.aggregate([
+            {
+                $match: { form: new mongoose.Types.ObjectId(formId) }
+            },
+            {
+                $facet: {
+                    total: [
+                        { $count: "count" }
+                    ],
+                    responses: [
+                        { $skip: offset },
+                        { $limit: perPage }
+                    ]
+                }
+            }
+        ]);
+        console.log(data);
+        console.log(data[0].total)
+        res.json(
+            {
+                pagination:
+                {
+                    perPage: perPage, 
+                    page: page, 
+                    offset: offset,
+                    total: data[0].total[0]?.count || 0
+                },
+                responses: data[0].responses
+            }
+        ).end()
     }
     catch (e) {
         console.log(e);
@@ -162,6 +197,7 @@ router.get('/elementStats/:elementId', async (req, res) => {
     }
 
 })
+
 
 async function getMultipleOptionStats(elementId) {
     return await Answer.aggregate([

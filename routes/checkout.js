@@ -60,7 +60,9 @@ router.get('/cancel', async (req, res) => {
 });
 
 
-
+// !!!!
+// stripe web hook works only when website is public. cant work on localhost
+// !!!!!
 
 // const endpointSecret = "whsec_cd339ac1fa7bc53101dd7578bafaee191b8f65624942dd8990831fff6d1cb12e";
 // router.post('/webhook', express.raw({type: 'application/json'}), (request, response) => {
@@ -82,4 +84,6 @@ router.get('/cancel', async (req, res) => {
 //   // Return a 200 response to acknowledge receipt of the event
 //   response.send();
 // });
+
+
 export default router
