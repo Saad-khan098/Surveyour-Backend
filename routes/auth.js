@@ -2,6 +2,7 @@ import bcrypt from 'bcrypt';
 import User from "../Models/User.js";
 import express from 'express';
 import jwt from 'jsonwebtoken';
+import { transporter, generateAlphanumericPassword } from "../utils/helpers.js"
 
 const SecretKey = 'My_Secret_Key';
 
@@ -72,5 +73,66 @@ router.post("/login", async (req, res) => {
         console.error(error)
     }
 });
+
+router.use(async (req, res, next) => {
+    try {
+        const token = req.headers.authorization;
+        const user = jwt.verify(token.split(" ")[1], SecretKey)
+        req.user = user;
+        next()
+    } catch (e) {
+        req.user = null
+        next()
+        // return res.json({ msg: "TOKEN NOT FOUND / INVALID" })
+    }
+})
+
+router.post("/forgetPassword", async (req,res) => {
+    try{
+        const { email } = req.body
+        const user = await User.findOne({ email })
+        if (!user) {
+            return res.status(400).json({ msg: "User not found" });}
+            { 
+            const newPassword = generateAlphanumericPassword();
+            await user.updateOne({ password: await bcrypt.hash(newPassword, 5) })
+            await transporter.sendMail({
+                from: 'musabgym20@gmail.com',
+                to: user.email,
+           
+            subject: "Surveyour Password Reset",
+                text: `Dear ${user.firstName} ${user.lastName}, your new password is: ${newPassword}`
+            });
+        }
+        return res.status(200).json({ msg: 'New Password sent to your Email' });
+
+    }catch(error){
+        console.error(error)
+        return res.status(500).json({ msg: 'Internal Server Error' });
+    }
+})
+
+    router.post("/changePassword", async (req, res) => {
+        try {
+            const { oldPassword, newPassword, confirmNewPassword } = req.body
+
+            const user = await User.findOne({ email: req.user.email });
+            if (!user) {
+            return res.status(400).json({ msg: "User not found" });}
+
+            const passwordCheck = await bcrypt.compare(oldPassword, user.password);
+            if (!passwordCheck) return res.status(400).json({ msg: "WRONG PASSWORD" })
+
+            if (newPassword !== confirmNewPassword) 
+            return res.status(400).json({ msg: 'Did not confirm password correctly' });
+
+            if (user) await user.updateOne({ password: await bcrypt.hash(newPassword, 5) })
+            return res.status(200).json({ msg: 'Password Changed Successfully' });
+
+        } catch (error) {
+            console.error(error)
+            return res.status(500).json({ msg: 'Internal Server Error' });
+        }
+    })
 
 export default router

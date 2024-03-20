@@ -26,4 +26,5 @@ router.delete('/:email', checkAdmin, async (req,res)=>{
     }
 })
 
+
 export default router
