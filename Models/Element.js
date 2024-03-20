@@ -16,7 +16,8 @@ const ElementSchema = new mongoose.Schema({
     elementType: {type: Number, required: true},
     question: {type: String, required: true},
     option: [String],
-    createdAt: {type: Date, default: new Date()}
+    createdAt: {type: Date, default: new Date()},
+    page: {type: Number, default: 1}
 })
 
 export default mongoose.models.Element || mongoose.model('Element', ElementSchema)

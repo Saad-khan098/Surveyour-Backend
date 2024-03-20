@@ -13,7 +13,7 @@ router.post('/create', async(req,res)=>{
         return res.status(401).json({msg: 'not authorized'});
     }
     try{
-        const {formId, order, elementType, question, option} = req.body;
+        const {formId, order, elementType, question, option, page} = req.body;
         console.log(req.body)
        
 
@@ -138,17 +138,4 @@ router.post('/removeOption/:elementId', async (req,res)=>{
     }
  
 })
-
-// router.post('/changeOrder', async (req,res)=>{
-//     try{ 
-//         const {orderNumbers} = req.body;
-//         orderNumbers.forEach(async element => {
-//         await Element.updateOne({_id: element.element_id}, {$set: {order: element.newOrder}});
-//         })
-//     }catch(error){
-//     console.error(error);
-//     res.status(500).json({msg: 'some error occured'});
-//     }
-// })
-
 export default router

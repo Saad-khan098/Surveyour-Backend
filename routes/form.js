@@ -50,24 +50,17 @@ router.get('/all', async (req, res) => {
 router.get('/:id', async (req, res) => {
     try {
         const { id } = req.params;
-        console.log(id);
+        const page = req.query.page || 1;
 
-        const formWithElements = await Form.aggregate([
-            { $match: { _id: new mongoose.Types.ObjectId(id) } },
-            {
-                $lookup: {
-                    from: 'elements',
-                    localField: '_id',
-                    foreignField: 'formId',
-                    as: 'elements'
-                }
-            }
-        ]);
-        if (!formWithElements || formWithElements.length === 0) {
-            return res.json({ msg: 'FORM NOT FOUND' });
+        const form = await Form.findOne({_id: id}).exec();
+        if(!form)return res.status(404).json('form not found')
+        const elements = await Element.find({formId:form._id, page: page}).exec();
+        
+        if (elements.length === 0) {
+            return res.json({ msg: 'No elements on this page' });
         }
 
-        res.json(formWithElements[0]).end();
+        return res.json({...form, elements: elements});
     } catch (e) {
         console.log(e);
         res.json({ msg: 'Some error occurred' }).end();
