@@ -81,7 +81,7 @@ router.put('/:id', async (req,res)=>{
             return res.status(404).json({ msg: "Form not found" });
         }
 
-        if (String(form.user) !== String(req.user._id)) {
+        if (String(form.user) !== String(req.user.id)) {
             return res.status(401).json({ msg: "Unauthorized" });
         }
         await Form.findByIdAndUpdate(id, { name: name });
@@ -99,7 +99,11 @@ router.post('/create', async (req, res) => {
     if(!req.user){
         return res.status(401).json({msg: 'not auth'});
     }
-
+    if(!req.user.roles.includes('premium')){
+        const formsCount = await Form.countDocuments({user: req.user.id}).exec()
+        console.log(formsCount);
+        if(formsCount >= 5)return res.status(403).json({msg: 'limit exceeded. You can only create upto 5 forms for free'});
+    }
     try {
         if (!name || name.trim().length === 0) {
             return res.status(400).json({ msg: "Please enter a valid form name" });
@@ -107,13 +111,14 @@ router.post('/create', async (req, res) => {
         if (!req.user || !req.user.id) {
             return res.status(401).json({ msg: "Unauthorized, please login" });
         }
-        const form = await Form.findOne({name: name}).exec();
-        if(form)res.status(409).send({msg: 'a form by this name already exists'})
+        const form = await Form.findOne({name: name, user: req.user.id}).exec();
+        if(form)return res.status(409).send({msg: 'a form by this name already exists'})
 
         await Form.create({
             name: name,
             user: req.user.id
         });
+        
         return res.status(201).json({ msg: 'Form created successfully' });
     } catch (e) {
         console.error(e);

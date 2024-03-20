@@ -205,5 +205,4 @@ async function getNumericalStats(elementId) {
         }
     ])
 }
-
 export default router

@@ -6,6 +6,7 @@ import userRouter from './routes/user.js'
 import formRouter from './routes/form.js'
 import elementRouter from './routes/element.js'
 import responseRouter from './routes/response.js'
+import checkoutRouter from './routes/checkout.js'
 import jwt from 'jsonwebtoken'
 
 const SecretKey = 'My_Secret_Key';
@@ -23,7 +24,6 @@ const main = async () => {
 await main();
 
 
-// for parsing post request body
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
@@ -51,6 +51,7 @@ app.use('/user', userRouter)
 app.use('/form', formRouter)
 app.use('/element', elementRouter)
 app.use('/response', responseRouter)
+app.use('/checkout', checkoutRouter)
 
 app.use((req, res, next) => {
     res.status(404).json({ error: 'URL Not Found' });
