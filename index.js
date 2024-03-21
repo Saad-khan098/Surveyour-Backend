@@ -8,6 +8,7 @@ import elementRouter from './routes/element.js'
 import responseRouter from './routes/response.js'
 import checkoutRouter from './routes/checkout.js'
 import jwt from 'jsonwebtoken'
+import parseJwt from './Middlewares/parseJwt.js';
 
 const SecretKey = 'My_Secret_Key';
 
@@ -34,18 +35,7 @@ app.get('/', (req,res)=>{
 
 app.use('/auth', authRouter)
 
-app.use(async (req, res, next) => {
-    try {
-        const token = req.headers.authorization;
-        const user = jwt.verify(token.split(" ")[1], SecretKey)
-        req.user = user;
-        next()
-    } catch (e) {
-        req.user = null
-        next()
-        // return res.json({ msg: "TOKEN NOT FOUND / INVALID" })
-    }
-})
+app.use(parseJwt);
 
 app.use('/user', userRouter)
 app.use('/form', formRouter)

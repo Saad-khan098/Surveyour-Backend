@@ -9,7 +9,6 @@ import mongoose from 'mongoose';
 var router = express.Router();
 
 router.get('/all', async (req, res) => {
-
     if (!req.user) return res.status(401).json({ msg: 'not auth' });
 
     const perPage = Math.min(req.query.perPage || 3, 3);    

@@ -3,6 +3,7 @@ import User from "../Models/User.js";
 import express from 'express';
 import jwt from 'jsonwebtoken';
 import { transporter, generateAlphanumericPassword } from "../utils/helpers.js"
+import parseJwt from '../Middlewares/parseJwt.js';
 
 const SecretKey = 'My_Secret_Key';
 
@@ -74,18 +75,7 @@ router.post("/login", async (req, res) => {
     }
 });
 
-router.use(async (req, res, next) => {
-    try {
-        const token = req.headers.authorization;
-        const user = jwt.verify(token.split(" ")[1], SecretKey)
-        req.user = user;
-        next()
-    } catch (e) {
-        req.user = null
-        next()
-        // return res.json({ msg: "TOKEN NOT FOUND / INVALID" })
-    }
-})
+router.use(parseJwt)
 
 router.post("/forgetPassword", async (req,res) => {
     try{
