@@ -5,6 +5,7 @@ import jwt from 'jsonwebtoken';
 import Form from '../Models/Form.js'
 import Element from '../Models/Element.js'
 import mongoose from 'mongoose';
+import Response from '../Models/Response.js';
 
 var router = express.Router();
 
@@ -121,7 +122,7 @@ router.use('/:func/:id',async (req, res, next) => {
         req.form = form;
     }
     catch(e){
-        res.json({ msg: 'Some error occurred during form owner check' }).end();
+        res.status(500).json({ msg: 'Some error occurred during form owner check' }).end();
     }
     next(); 
 })
@@ -185,11 +186,13 @@ router.get('/deletePage/:id', async (req, res) => {
 })
 
 router.delete('/deleteForm/:id', async (req, res) => {
+    // SHIFT LEFT AFTER PAGE DELETION
     const { id } = req.params;
     try{
 
         await Form.deleteOne({ _id: id }).exec();
         await Element.deleteMany({ formId: id }).exec();
+        await Response.deleteMany({form: id}).exec();
         res.json({ msg: `form ${id} and all of its elements deleted successfully` })
     }
     catch(e){

@@ -7,8 +7,10 @@ import formRouter from './routes/form.js'
 import elementRouter from './routes/element.js'
 import responseRouter from './routes/response.js'
 import checkoutRouter from './routes/checkout.js'
+import plansRouter from './routes/plans.js'
 import jwt from 'jsonwebtoken'
 import parseJwt from './Middlewares/parseJwt.js';
+
 
 const SecretKey = 'My_Secret_Key';
 
@@ -42,6 +44,7 @@ app.use('/form', formRouter)
 app.use('/element', elementRouter)
 app.use('/response', responseRouter)
 app.use('/checkout', checkoutRouter)
+app.use('/plans', plansRouter)
 
 app.use((req, res, next) => {
     res.status(404).json({ error: 'URL Not Found' });

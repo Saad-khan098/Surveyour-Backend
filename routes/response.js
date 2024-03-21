@@ -54,8 +54,6 @@ router.delete('/:responseId', async (req,res)=>{
     if(!responseId)return res.status(409).json({msg: 'invalid formId'});
     try{
         const response = await Response.findOne({_id: responseId}).populate('form').exec()
-        console.log(response);
-        console.log(req.user);
         if(!response)return res.status(404).json({msg: 'form not found'});
         if(response.form.user != req.user.id)return res.status(401).json({msg: 'un auth'});
         await Response.deleteOne({_id: responseId});
@@ -71,9 +69,6 @@ router.delete('/:responseId', async (req,res)=>{
 router.get('/all/:formId', async (req, res) => {
     if (!req.user) return res.status(401).send({ msg: 'not auth' });
     const { formId } = req.params;
-
-    
-
     try {
         const form = await Form.findOne({ _id: formId }).exec();
         if (!form) return res.status(404).send({ msg: 'form not found' });
@@ -135,7 +130,7 @@ router.get('/:responseId', async (req, res) => {
         const response = await Response.findOne({ _id: responseId }).populate('form').exec();
 
         if (!response) return res.status(400).json({ msg: 'response not found' });
-        if (response.user != req.user.id && response.form.user != req.user.id) return res.status(401).json({ msg: 'un auth' });
+        if (response.user != req.user.id | response.form.user != req.user.id) return res.status(401).json({ msg: 'un auth' });
 
         const r = await Element.aggregate([
             {
