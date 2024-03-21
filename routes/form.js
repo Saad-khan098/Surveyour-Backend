@@ -8,112 +8,6 @@ import mongoose from 'mongoose';
 
 var router = express.Router();
 
-router.get('/all', async (req, res) => {
-    if (!req.user) return res.status(401).json({ msg: 'not auth' });
-
-    const perPage = Math.min(req.query.perPage || 3, 3);    
-    const page = req.query.page || 1;
-    const offset = (page - 1) * perPage;
-
-    console.log(req.user.id);
-
-    const data = await Form.aggregate([
-        {
-            $match: { user: new mongoose.Types.ObjectId(req.user.id) }
-        },
-        {
-            $facet: {
-                total: [
-                    { $count: "count" }
-                ],
-                forms: [
-                    { $skip: offset },
-                    { $limit: perPage }
-                ]
-            }
-        }
-    ]);
-    res.json(
-        {
-            pagination:
-            {
-                perPage: perPage,
-                page:page, 
-                offset: offset, 
-                total: data[0].total[0]?.count || 0
-            }, 
-            forms: data[0].forms
-        }).end()
-})
-
-router.get('/:id', async (req, res) => {
-    try {
-        const { id } = req.params;
-        const page = req.query.page || 1;
-
-        const form = await Form.findOne({_id: id}).exec();
-        if(!form)return res.status(404).json('form not found')
-        if(!form.public && form.user != req.user?.id){
-            return res.status(401).json({msg: 'this form has not been made public yet'});
-        }
-        const elements = await Element.find({formId:form._id, page: page}).exec();
-        
-        if (elements.length === 0) {
-            return res.json({ msg: 'No elements on this page' });
-        }
-
-        return res.json({form: form, elements: elements});
-    } catch (e) {
-        console.log(e);
-        res.json({ msg: 'Some error occurred' }).end();
-    }
-});
-router.get('/submit/:id', async (req, res) => {
-    if(!req.user)return res.status(401).json({ msg: 'not authorized' });
-    try {
-        const { id } = req.params;
-
-        const form = await Form.findOne({_id: id}).exec();
-        if(!form)return res.status(404).json('form not found')
-        if(form.user != req.user.id){
-            return res.status(401).json({msg: 'un auth'});
-        }
-        await Form.updateOne({_id: id}, {$set: {public: true}});
-        res.json({formId: form._id});
-    } catch (e) {
-        console.log(e);
-        res.json({ msg: 'Some error occurred' }).end();
-    }
-});
-router.put('/:id', async (req, res) => {
-    const { name } = req.body;
-    const { id } = req.params;
-
-    if (!req.user) {
-        return res.status(401).json({ msg: 'not authorized' });
-    }
-
-    if (!name || name.length == 0) {
-        res.status(400).json({ msg: "enter valid form name" });
-    }
-    try {
-        const form = await Form.findById(id);
-        if (!form) {
-            return res.status(404).json({ msg: "Form not found" });
-        }
-
-        if (String(form.user) !== String(req.user.id)) {
-            return res.status(401).json({ msg: "Unauthorized" });
-        }
-        await Form.findByIdAndUpdate(id, { name: name });
-        res.status(204).json({ msg: 'form updated sucessfullly' })
-    }
-    catch (e) {
-        console.log(e);
-        res.status(500).json({ msg: 'some error occured' });
-    }
-})
-
 router.post('/create', async (req, res) => {
     const { name } = req.body;
 
@@ -145,40 +39,163 @@ router.post('/create', async (req, res) => {
         return res.status(500).json({ msg: 'Some error has occurred' });
     }
 });
-router.get('/addPage/:formId', async (req,res)=>{
-    if(!req.user)return res.status(401).json({msg: 'not auth'});
-    const {formId} = req.params;
-    if(!formId)return res.status(409).json({msg: 'formId not found'});
+
+router.get('/all', async (req, res) => {
+    if (!req.user) return res.status(401).json({ msg: 'not auth' });
+
+    const perPage = Math.min(req.query.perPage || 3, 3);
+    const page = req.query.page || 1;
+    const offset = (page - 1) * perPage;
+
+    console.log(req.user.id);
+
+    const data = await Form.aggregate([
+        {
+            $match: { user: new mongoose.Types.ObjectId(req.user.id) }
+        },
+        {
+            $facet: {
+                total: [
+                    { $count: "count" }
+                ],
+                forms: [
+                    { $skip: offset },
+                    { $limit: perPage }
+                ]
+            }
+        }
+    ]);
+    res.json(
+        {
+            pagination:
+            {
+                perPage: perPage,
+                page: page,
+                offset: offset,
+                total: data[0].total[0]?.count || 0
+            },
+            forms: data[0].forms
+        }).end()
+})
+
+router.get('/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const page = req.query.page || 1;
+
+        const form = await Form.findOne({ _id: id }).exec();
+        if (!form) return res.status(404).json('form not found')
+        if (!form.public && form.user != req.user?.id) {
+            return res.status(401).json({ msg: 'this form has not been made public yet' });
+        }
+        const elements = await Element.find({ formId: form._id, page: page }).exec();
+
+        if (elements.length === 0) {
+            return res.json({ msg: 'No elements on this page' });
+        }
+
+        return res.json({ form: form, elements: elements });
+    } catch (e) {
+        console.log(e);
+        res.json({ msg: 'Some error occurred ' }).end();
+    }
+});
+
+
+/*
+MIDDLEWARE TO CHECK IF FORM BELONGS TO USER
+BELOW ARE ALL ENDPOINTS ONLY ACCESSIBLE TO OWNER OF FORM WITH FORM_ID: id(param)
+*/
+
+
+router.use('/:func/:id',async (req, res, next) => {
+    if (!req.user) return res.status(401).json({ msg: 'not authorized' });
+    const { id } = req.params;
+    if (!id) return res.status(409).json({ msg: 'no formId sent' })
 
     try{
-        const form = await Form.findOne({_id: formId}).exec()
-        if(!form)return res.status(401).json({msg: 'un auth'});
-        if(form.user != req.user.id)return res.status(401).json({msg: 'not auth'})
-        form.pages ++;
-        await form.save();
+        const form = await Form.findOne({ _id: id }).exec();
+        if (!form) return res.status(404).json('form not found')
+        if (form.user != req.user.id)
+            return res.status(401).json({ msg: 'un auth' });   
+        req.form = form;
     }
     catch(e){
+        res.json({ msg: 'Some error occurred during form owner check' }).end();
+    }
+    next(); 
+})
+
+
+
+router.get('/submit/:id', async (req, res) => {
+    const {id} = req.params    
+    try {
+        await Form.updateOne({ _id: id }, { $set: { public: true } });
+        res.json({ formId: id });
+    } catch (e) {
         console.log(e);
-        res.status(500).json({msg: 'some error'});
+        res.json({ msg: 'Some error occurred' }).end();
+    }
+});
+
+router.put('/changeName/:id', async (req, res) => {
+    const { name } = req.body;
+    const { id } = req.params;
+
+    
+    if (!name || name.length == 0) {
+        return res.status(400).json({ msg: "enter valid form name" });
+    }
+    try {
+        await Form.findByIdAndUpdate(id, { name: name });
+        return res.json({ msg: 'form updated sucessfullly' })
+    }
+    catch (e) {
+        console.log(e);
+        return res.status(500).json({ msg: 'some error occured' });
     }
 })
 
-router.delete('/:id', async (req, res) => {
 
-    if (!req.user) return res.status(401).send({ msg: 'not auth' });
-
-    const { id } = req.params;
-    const form = await Form.findOne({ _id: id }).exec();
-
-    if (!form) {
-        return res.status(404).send({ msg: 'form not found' });
+router.get('/addPage/:id', async (req, res) => {
+    const {id} = req.params;
+    try{
+        await Form.updateOne({_id: id},{$inc:{pages: 1}})
+        res.json({msg: 'page added'});
     }
-    if (form.user != req.user.id) return res.status(401).send({ msg: 'not auth' });
+    catch (e) {
+        console.log(e);
+        res.status(500).json({ msg: 'some error' });
+    }
+})
+router.get('/deletePage/:id', async (req, res) => {
+    const {id} = req.params;
+    const {page} = req.query;
+    if(!page)return res.status(409).json({msg: 'page number not given'});
+    try{
+        await Form.updateOne({_id: id},{$inc:{pages: -1}})
+        await Element.deleteMany({formId: id, page: page});
+        res.json({msg: 'page deleted with all of its elements'});
+    }
+    catch (e) {
+        console.log(e);
+        res.status(500).json({ msg: 'some error' });
+    }
+})
 
-    await Form.deleteOne({ _id: form._id }).exec();
-    await Element.deleteMany({ formId: form.id }).exec();
+router.delete('/deleteForm/:id', async (req, res) => {
+    const { id } = req.params;
+    try{
 
-    res.json({ msg: `form ${form._id} and all of its elements deleted successfully` })
+        await Form.deleteOne({ _id: id }).exec();
+        await Element.deleteMany({ formId: id }).exec();
+        res.json({ msg: `form ${id} and all of its elements deleted successfully` })
+    }
+    catch(e){
+        console.log(e);
+        res.status(500).json({ msg: 'some error' });
+    }
 })
 
 export default router
