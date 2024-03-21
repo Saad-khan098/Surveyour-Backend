@@ -1,6 +1,5 @@
 import express from 'express';
 import stripePackage from 'stripe';
-import Subscription from '../Models/Subscription.js'
 import User from '../Models/User.js';
 
 const stripe = stripePackage('sk_test_51OwB35P6rBN9TIIzalKT0Y1oaiTXhbdC1x1AE7gYT8SMFbOaGPaER5VfF7gwK7X1ItnxXZpcFYVBj9dXciYiDnPq00G1e3yn5Z');

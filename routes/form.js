@@ -54,41 +54,39 @@ router.get('/:id', async (req, res) => {
 
         const form = await Form.findOne({_id: id}).exec();
         if(!form)return res.status(404).json('form not found')
+        if(!form.public && form.user != req.user?.id){
+            return res.status(401).json({msg: 'this form has not been made public yet'});
+        }
         const elements = await Element.find({formId:form._id, page: page}).exec();
         
         if (elements.length === 0) {
             return res.json({ msg: 'No elements on this page' });
         }
 
-        return res.json({...form, elements: elements});
+        return res.json({form: form, elements: elements});
     } catch (e) {
         console.log(e);
         res.json({ msg: 'Some error occurred' }).end();
     }
 });
+router.get('/submit/:id', async (req, res) => {
+    if(!req.user)return res.status(401).json({ msg: 'not authorized' });
+    try {
+        const { id } = req.params;
 
-
-
-// router.get('/:id', async (req,res)=>{
-//     try{
-//         const {id} = req.params;
-//         const form = await Form.findOne({_id: id});
-//         if (!form) return res.json({msg:"FORM NOT FOUND"});
-
-//         const elements = await Element.find({formId: id});
-//         form.elements = elements;
-//         res.json(form).end();
-//     }
-//     catch(e){
-//         console.log(e);
-//         res.json({msg: 'some error occured'}).end();
-//     }  
-// })
-
-
+        const form = await Form.findOne({_id: id}).exec();
+        if(!form)return res.status(404).json('form not found')
+        if(form.user != req.user.id){
+            return res.status(401).json({msg: 'un auth'});
+        }
+        await Form.updateOne({_id: id}, {$set: {public: true}});
+        res.json({formId: form._id});
+    } catch (e) {
+        console.log(e);
+        res.json({ msg: 'Some error occurred' }).end();
+    }
+});
 router.put('/:id', async (req, res) => {
-
-
     const { name } = req.body;
     const { id } = req.params;
 
@@ -148,6 +146,23 @@ router.post('/create', async (req, res) => {
         return res.status(500).json({ msg: 'Some error has occurred' });
     }
 });
+router.get('/addPage/:formId', async (req,res)=>{
+    if(!req.user)return res.status(401).json({msg: 'not auth'});
+    const {formId} = req.params;
+    if(!formId)return res.status(409).json({msg: 'formId not found'});
+
+    try{
+        const form = await Form.findOne({_id: formId}).exec()
+        if(!form)return res.status(401).json({msg: 'un auth'});
+        if(form.user != req.user.id)return res.status(401).json({msg: 'not auth'})
+        form.pages ++;
+        await form.save();
+    }
+    catch(e){
+        console.log(e);
+        res.status(500).json({msg: 'some error'});
+    }
+})
 
 router.delete('/:id', async (req, res) => {
 

@@ -98,7 +98,7 @@ router.post('/addOption/:elementId', async (req,res)=>{
     if(!req.user)return res.status(401).json({msg: 'not auth'});
 
     const {elementId} = req.params;
-    const {option} = req.body;   
+    const {option} = req.body;
     if(!option || option.length <= 0) return res.status(400).json({msg: 'incoorect option'})
 
 

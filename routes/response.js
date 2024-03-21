@@ -48,6 +48,25 @@ router.post('/create/:formId', async (req, res) => {
         res.status(500).json({ msg: 'some error occurred' });
     }
 })
+router.delete('/:responseId', async (req,res)=>{
+    if(!req.user)return res.status(401).json({msg: 'unauth'});
+    const { responseId } = req.params;
+    if(!responseId)return res.status(409).json({msg: 'invalid formId'});
+    try{
+        const response = await Response.findOne({_id: responseId}).populate('form').exec()
+        console.log(response);
+        console.log(req.user);
+        if(!response)return res.status(404).json({msg: 'form not found'});
+        if(response.form.user != req.user.id)return res.status(401).json({msg: 'un auth'});
+        await Response.deleteOne({_id: responseId});
+        await Answer.deleteMany({response: response._id})
+        res.json({msg: 'response deleted successfully'})
+    }
+    catch(e){
+        console.log(e);
+        return res.status(500).json({msg: 'some error occurred'});
+    }
+})
 
 router.get('/all/:formId', async (req, res) => {
     if (!req.user) return res.status(401).send({ msg: 'not auth' });
