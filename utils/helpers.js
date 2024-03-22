@@ -6,11 +6,11 @@ const transporter = nodemailer.createTransport({
     secure: true,
     auth: {
         user: 'musabgym20@gmail.com',
-        pass: 'Mi121453795!'
+        pass: 'ofxs bjkj epoe lrqw'
     }
 });
 
-function generateAlphanumericPassword(length = 8) {
+function generatePassword(length = 8) {
     const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
     let password = "";
 
@@ -22,4 +22,4 @@ function generateAlphanumericPassword(length = 8) {
     return password;
 }
 
-export { transporter, generateAlphanumericPassword };
+export { transporter, generatePassword };

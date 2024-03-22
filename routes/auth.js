@@ -2,7 +2,7 @@ import bcrypt from 'bcrypt';
 import User from "../Models/User.js";
 import express from 'express';
 import jwt from 'jsonwebtoken';
-import { transporter, generateAlphanumericPassword } from "../utils/helpers.js"
+import { transporter, generatePassword } from "../utils/helpers.js"
 import parseJwt from '../Middlewares/parseJwt.js';
 
 const SecretKey = 'My_Secret_Key';
@@ -26,7 +26,7 @@ router.post("/signUp", async (req, res) => {
     try {
         console.log('signup')
         console.log(req.body)
-        const { email, password } = req.body
+        const { name, email, password } = req.body
 
         if(!validateEmail(email)){
             return res.status(400).json({msg: 'Invalid Email'})
@@ -38,7 +38,7 @@ router.post("/signUp", async (req, res) => {
         let user = await User.findOne({ email })
         if (user) return res.status(409).json({ msg: "this user already exists" })
 
-        await User.create({ email: email, password: await bcrypt.hash(password, 10) });
+        await User.create({ email: email, password: await bcrypt.hash(password, 10), name: name });
         return res.status(201).json({msg: 'User created successfully'})
 
 
@@ -82,16 +82,17 @@ router.post("/forgetPassword", async (req,res) => {
         const { email } = req.body
         const user = await User.findOne({ email })
         if (!user) {
-            return res.status(400).json({ msg: "User not found" });}
-            { 
-            const newPassword = generateAlphanumericPassword();
+            return res.status(400).json({ msg: "User not found" });
+        }
+        else { 
+            const newPassword = generatePassword();
             await user.updateOne({ password: await bcrypt.hash(newPassword, 5) })
             await transporter.sendMail({
                 from: 'musabgym20@gmail.com',
                 to: user.email,
            
             subject: "Surveyour Password Reset",
-                text: `Dear ${user.firstName} ${user.lastName}, your new password is: ${newPassword}`
+                text: `Dear ${user.name}, your new password is: ${newPassword}`
             });
         }
         return res.status(200).json({ msg: 'New Password sent to your Email' });
