@@ -10,7 +10,7 @@ import checkoutRouter from './routes/checkout.js'
 import plansRouter from './routes/plans.js'
 import jwt from 'jsonwebtoken'
 import parseJwt from './Middlewares/parseJwt.js';
-
+import cors from "cors";
 
 const SecretKey = 'My_Secret_Key';
 
@@ -30,6 +30,7 @@ await main();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
+app.use(cors());
 
 app.get('/', (req,res)=>{
     res.send('hello world');
@@ -51,7 +52,7 @@ app.use((req, res, next) => {
     next();
 });
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 5600;
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
