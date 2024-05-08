@@ -9,6 +9,33 @@ import Answer from '../Models/Answer.js';
 var router = express.Router();
 
 
+
+const elementTypes = [
+    {
+        name: 'text',
+    },
+    {
+        name: 'numerical'
+    },
+    {
+        name: 'date',
+    }
+    ,
+    {
+        name: 'radio'
+    },
+    {
+        name: 'checkbox'
+    },
+    {
+        name: 'dropdown'
+    }
+]
+
+
+router.get('/elementTypes', async (req,res)=>{
+   return res.json(elementTypes).end();
+})
 router.post('/create', async(req,res)=>{
     if(!req.user){
         return res.status(401).json({msg: 'not authorized'});

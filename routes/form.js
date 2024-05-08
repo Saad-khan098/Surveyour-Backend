@@ -85,15 +85,20 @@ router.get('/:id', async (req, res) => {
         const page = req.query.page || 1;
 
         const form = await Form.findOne({ _id: id }).exec();
+        console.log(form);
+        
         if (!form) return res.status(404).json('form not found')
+
+        console.log(req.user);
         if (!form.public && form.user != req.user?.id) {
             return res.status(401).json({ msg: 'this form has not been made public yet' });
         }
-        const elements = await Element.find({ formId: form._id, page: page }).exec();
+        const elements = await Element.find({ formId: form._id, page: page }).sort({order: 1}).exec();
+        console.log(elements)
 
-        if (elements.length === 0) {
-            return res.json({ msg: 'No elements on this page' });
-        }
+        // if (elements.length === 0) {
+        //     return res.json({ msg: 'No elements on this page' });
+        // }
 
         return res.json({ form: form, elements: elements });
     } catch (e) {
@@ -177,12 +182,75 @@ router.get('/deletePage/:id', async (req, res) => {
     try{
         await Form.updateOne({_id: id},{$inc:{pages: -1}})
         await Element.deleteMany({formId: id, page: page});
+
+        // !!! SHIFT LEFT ALL ELEMENT->Page greater than {page} !!!
+
         res.json({msg: 'page deleted with all of its elements'});
     }
     catch (e) {
         console.log(e);
         res.status(500).json({ msg: 'some error' });
     }
+})
+router.put('/addPage/:id', async (req,res)=>{
+    console.log('adding page');
+    const {id} = req.params;
+    await Form.updateOne({ _id: id }, { $inc: { pages: 1 } });
+    res.json({msg: 'done'});
+})
+router.put('/save/:id', async (req,res)=>{
+    const {form,page} = req.body;
+  
+    if(!form || !form.form || !form.elements){
+        return res.status(403).json({msg: 'incorrect form sent'});
+    }
+
+    console.log(form);
+
+    const formId = form.form._id;
+
+    for(let i in form.elements){
+        let elem = form.elements[i];
+        if(elem.isNew){
+            const newElement = new Element({
+                formId: formId,
+                order: i,
+                required: elem.required,
+                elementType: elem.elementType,
+                question: elem.question,
+                option: elem.option,
+                createdAt: new Date(),
+                page: page
+            })
+            await newElement.save();
+        }
+        else{
+            await Element.updateOne({_id: elem._id}, {
+                order: i,
+                required: elem.required,
+                question: elem.question,
+                option: elem.option,
+            })
+        }
+    }
+
+    res.end();
+})
+
+router.put('/publish/:id', async (req,res)=>{
+    console.log('publishing form');
+    const {id} = req.params;
+    
+    try{
+
+        await Form.updateOne({_id: id,}, {$set: {public: true}});
+        return res.json({msg: 'form made public successfully'});
+    }
+    catch(e){
+        console.log(e);
+        return res.status(500).json({msg: 'some error occurred'});
+    }
+
 })
 
 router.delete('/deleteForm/:id', async (req, res) => {
@@ -193,6 +261,9 @@ router.delete('/deleteForm/:id', async (req, res) => {
         await Form.deleteOne({ _id: id }).exec();
         await Element.deleteMany({ formId: id }).exec();
         await Response.deleteMany({form: id}).exec();
+
+        // !!! DELETE ANSWERS WITH FOUND RESPONSE_IDS !!!
+
         res.json({ msg: `form ${id} and all of its elements deleted successfully` })
     }
     catch(e){

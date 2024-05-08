@@ -10,11 +10,15 @@ import checkoutRouter from './routes/checkout.js'
 import plansRouter from './routes/plans.js'
 import jwt from 'jsonwebtoken'
 import parseJwt from './Middlewares/parseJwt.js';
+import cors from 'cors';
 
 
 const SecretKey = 'My_Secret_Key';
 
 const app = express();
+
+app.use(cors())
+
 
 const main = async () => {
     try {
@@ -51,7 +55,7 @@ app.use((req, res, next) => {
     next();
 });
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
